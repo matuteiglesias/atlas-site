@@ -1,0 +1,8 @@
+{
+  "label": "Referencia",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Referencia del núcleo de datos y geometrias geoespaciales."
+  }
+}

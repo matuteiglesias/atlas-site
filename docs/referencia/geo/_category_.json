@@ -1,0 +1,8 @@
+{
+  "label": "Geo",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Geometrías y métodos de integración geoespacial."
+  }
+}

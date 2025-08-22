@@ -1,0 +1,8 @@
+{
+  "label": "Operación",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "Guías operativas, roles de equipo, CI/CD y manejo de logs."
+  }
+}
