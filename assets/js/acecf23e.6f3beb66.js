@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkatlas_site=self.webpackChunkatlas_site||[]).push([[1903],{1912:s=>{s.exports=JSON.parse('{"blogBasePath":"/atlas-site/blog","blogTitle":"Blog","authorsListPath":"/atlas-site/blog/authors"}')}}]);

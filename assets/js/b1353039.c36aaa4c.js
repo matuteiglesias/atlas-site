@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkatlas_site=self.webpackChunkatlas_site||[]).push([[5457],{8483:t=>{t.exports=JSON.parse('{"metadata":{"permalink":"/atlas-site/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":4,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);
