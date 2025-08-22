@@ -21,29 +21,29 @@ Es un recurso operativo para equipos técnicos, investigadores y actores institu
 
 El Atlas está organizado en secciones temáticas. Cada una tiene su índice y secciones internas.
 
-### 🧪 [Métodos](/category/métodos)
+### 🧪 [Métodos](/docs/category/métodos)
 Bloques modulares y herramientas para el procesamiento, análisis y visualización de datos. Incluye:
 - Charts y estilos
 - Toolkits para notebooks, modelado y ETL
 - Integraciones geográficas
 - Temporalidad y estructuras modulares
 
-### ⚙️ [Operación](/category/operación)
+### ⚙️ [Operación](/docs/category/operación)
 Guías sobre infraestructura operativa, versionado, naming, logs y CI/CD. Apunta a prácticas sostenibles y reproducibles.
 
-### 🧾 [Referencia](/category/referencia)
+### 🧾 [Referencia](/docs/category/referencia)
 Documentación de las fuentes base: censos, geometrías, variables núcleo. No describe procesos, sino los elementos de entrada.
 
-### 📘 [Catálogo](/category/catálogo)
+### 📘 [Catálogo](/docs/category/catálogo)
 Indicadores, outputs y artefactos públicos. Por ahora, documentos de población sintética y métricas de pobreza.
 
-### 🔧 [Pocket](/category/pocket)
+### 🔧 [Pocket](/docs/category/pocket)
 Tips rápidos, patrones de código, micro-recetas y checklists. Pensado para resolver problemas operativos concretos. Por ejemplo:
 - Cómo unir geometrías y CSVs con Mapbox
 - Cheatsheets para logs, timestamps, merge y estilo de gráficos
 - Recetas para evitar errores comunes con JSON, CLI y Git
 
-### 📚 [Playbooks](/playbooks)
+### 📚 [Playbooks](/docs/playbooks)
 **Workflows completos**, aún en desarrollo. Los playbooks siguen una plantilla tipo:
 → _Inputs → Pasos → QA → Output → Idempotencia_  
 Están linkeados a métodos y referencia. Por ahora, el índice resume lo planificado.
