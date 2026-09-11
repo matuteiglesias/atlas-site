@@ -14,9 +14,10 @@ authority:
   - cross-repository engineering architecture for the Argentina poverty ecosystem
   - repository-boundary map and accepted integration intent
   - cross-system contract and artifact registry at architecture level
-  - shared vocabulary for current, fixture-proven, proposed, legacy and blocked states
-  - architecture-level semantics for identities, clocks and responsibility boundaries
+  - shared vocabulary for current, real-data-proven, fixture-proven, research-only, proposed, legacy and blocked states
+  - architecture-level semantics for identities, clocks, weighting and responsibility boundaries
   - migration/status documentation and editorial precedence of architecture over working notes
+  - autonomous documentation-maintenance guidance and carry state
   does_not_own:
   - producer-repository implementation or scientific method
   - concrete producer artifact values, QA evidence or release status
@@ -27,6 +28,7 @@ interfaces:
   consumes:
   - metadata:producer-system-boundaries
   - metadata:producer-contracts-and-release-evidence
+  - metadata:producer-scientific-commissioning-evidence
   produces:
   - publication:argentina-poverty-engineering-docs@1
 upstream:
@@ -44,22 +46,32 @@ downstream:
 - engineers
 - researchers
 - maintainers
+- autonomous-agents
 canonical_commands:
+- npm ci
 - npm run build
 - python scripts/verify_deployment_config.py
 generated_paths:
 - build/
 verification:
-  status: architecture-source-established-release-discovery-proven
-  last_verified: '2026-08-31'
+  status: real-data-chain-commissioned-research-only
+  last_verified: '2026-09-11'
   command: npm run build
   notes:
-  - scientific statements are grounded in current producer SYSTEM/contracts and explicit proposed migrations
-  - producer evidence remains authoritative for whether a concrete implementation or release actually exists
-  - ecosystem-release-discovery/v1 is live-proven across IPC-to-canastas and EPH-to-income-modeling consumer edges
-  - the release-discovery proof removes transport uncertainty but does not promote candidate science or authorize unresolved downstream semantics
+  - exact EPH 2024-Q3 and CPV-2010 target-year sample parents now reach a materialized real semantic feature plane and household-safe transport experiments
+  - encuestador main has completed P1-R/P2 frontier experiments, nested predictive-distribution evidence and full Census research commissioning
+  - research.household-welfare-predictive/v1 is implemented on encuestador main and preserves transport caveats
+  - canastasINDEC main exposes a bounded quarter-parameterized poverty-input slice including the 2024-Q3 integration period
+  - indice-pobreza-UBA main includes the predictive-welfare FGT seam; the detached province/national producer is validated in open PR 27 and is not yet canonical mainline capability
+  - argentina-poverty-atlas main remains synthetic/noindex; validated real-release ingest is open PR 23 and must not be described as merged
+  - no research result in this chain is thereby official poverty statistics
   unknowns:
-  - architecture will evolve as source-backed neutral EPH frames, deployable welfare, governed poverty-line and real poverty-estimate releases are approved
+  - aggregate poverty-estimate uncertainty remains not supplied by the current predictive path
+  - material EPH-to-Census support/domain shift remains, including weak-support mass and private-versus-collective dwelling ambiguity
+  - temporal reconstruction of donor-vintage state remains outside the Sep 11 commissioned P1-R run
+  - approved general-purpose monetary-conversion status remains distinct from candidate/thin-coverage IPC publication
 maintenance:
   cadence: active-consumer-driven
-  next_review: '2026-09-15'
+  next_review: '2026-09-18'
+  guide: docs/maintenance/00_START_HERE.md
+  carry_state: docs/maintenance/carry_state.yaml
