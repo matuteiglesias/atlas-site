@@ -1,185 +1,247 @@
 ---
 title: EncUESTADOR — transport functional contract
 sidebar_position: 9
-status: current-design
+status: current
 owners: [poverty-ecosystem-engineering]
 ---
 
 # `encuestador-de-hogares`: transport functional contract
 
-The revived encuestador is the scientific nucleus that relates EPH evidence to an exact Census-derived scoring population.
+`encuestador-de-hogares` is the scientific transport instrument that relates exact EPH evidence to an exact Census-derived scoring population.
 
-Its function is now deliberately narrower than the historical monolith:
+Its modern function is:
 
-> **Infer a declared target-period household welfare quantity for the exact households in one governed Census-derived sample, using target-period EPH evidence and an approved EPH/Census semantic information plane, while making temporal assumptions, transport error and lineage explicit.**
+> Infer a declared target-period household welfare distribution for the exact households in one governed Census-derived sample, using target-period EPH evidence and an approved EPH/Census semantic information plane, while preserving household identity, temporal assumptions, transport diagnostics and lineage.
 
-It owns statistical transport. It does not own the systems that manufacture the source evidence around it.
+It owns statistical transport. It does not own source acquisition, Census sampling, cross-source semantic authority, poverty thresholds or FGT estimation.
 
-## Inputs
+## Current input boundary
 
-The target interface asks for five governed inputs.
-
-```text
-1. neutral EPH training evidence
-2. approved EPH/Census semantic feature plane
-3. exact Census sample + aligned scoring frame
-4. exact monetary-reference/conversion release
-5. transport study specification
-```
-
-The EPH input is observation evidence, not the `income-modeling-eph` flagship model or its current positive-income modeling dataset.
-
-The Census input is an exact sample namespace from `samplerCensoARG`; inference may not resample or silently change it.
-
-The semantic feature plane comes from `eph-censo-aligner`; the encuestador does not become authority over source-variable meaning merely because it fits a model.
-
-The monetary parent comes from `IPC-Argentina`; the encuestador resolves the model target into final welfare but does not define the price index.
-
-## Statistical operation
-
-A transport study may compare three families:
+The Sep 11 real-data study binds four concrete evidence families:
 
 ```text
-direct shared-information -> terminal welfare
-hurdle / two-part welfare
-staged dependency DAG
+1. exact EPH quarter evidence
+2. approved real EPH/Census semantic feature plane
+3. exact Census frame + target-year household sample
+4. declared transport study / monetary semantics
 ```
 
-The direct model is a mandatory baseline. Historical RFC1→RFC4 complexity is retained only if it improves final-welfare evidence under honest out-of-fold training and transport diagnostics.
-
-Every learned intermediate used downstream must be generated out-of-fold. Once exact EPH household identity exists, the approved fold policy must prevent members of the same household from leaking across folds.
-
-## Semantic equivalence is not temporal equivalence
-
-This distinction emerged from the historical quarterly inference code and materially changes the modern boundary.
-
-A feature may be semantically shared between EPH and Census while its Census value is stale for a later welfare period.
-
-The legacy notebook already responded to this problem by changing Census `CONDACT` counts toward quarter-specific unemployment before RFC1 scoring. That row mutation is not an approved modern method, but it is evidence that the original scientific idea included **target-period state updating**, not just static missing-variable imputation.
-
-The modern encuestador therefore owns an orthogonal transport-time classification such as:
+Exact commissioned parents include:
 
 ```text
-donor_vintage_proxy
-target_period_latent
-deterministic_target_period_derived
-target_period_anchor
-time_stable_or_invariant
-forbidden_temporal_input
+EPH:      eph-2024-q3-3b6a7a15c4af
+Census:   census-sample-2024-0839713eafea8d1b
+Plane:    eph-cpv2010-semantic-plane-2024q3-v1
 ```
 
-`eph-censo-aligner` answers whether two concepts are comparable. The encuestador answers whether a donor-vintage Census value can legitimately participate in a target-period transport model and under what assumption.
+The EPH source authority is `microdatos-EPH-INDEC`. `income-modeling-eph` is an EPH-only scientific sibling whose neutral-frame and feature contracts may inform bounded experiments, but its flagship/cohort is not the Census transport runtime.
 
-Any aggregate target-period calibration is optional transport science. It must be versioned and diagnosed, must operate on a distinct inferred/latent state, and must never overwrite the meaning of the donor Census observation.
+## Training population and target semantics
 
-## Clocks
-
-A real run must keep at least these clocks distinct:
+The current EPH 2024-Q3 transport study distinguishes:
 
 ```text
-eph_training_period
-census_frame_vintage
-sampling_target_period
-welfare_period
-monetary_reference_period
+positive income
+true zero income
+unavailable response (-9 / missing)
 ```
 
-For example, one annual target-year Census sample can be scored at multiple quarters. Reusing stable sampler IDs across quarters yields synthetic repeated snapshots, not observed longitudinal records.
+Unavailable supervision is not coerced to zero.
 
-## Outputs
+The terminal amount model is person-level; household welfare is constructed by aggregating exact household members. Strict observed household evaluation uses households with complete observed member income.
 
-The modern boundary has two canonical external products.
+The study uses no EPH survey/design weights in fitting or reported Sep 11 evaluation. Future studies may choose differently only through an explicit study contract.
 
-### Transport model release
+## Household-safe validation
+
+All approved evaluation must preserve household grouping:
+
+- members of one household cannot cross outer folds;
+- learned intermediate representations consumed by a terminal model must be generated out-of-fold relative to the terminal holdout;
+- full-fit models may be trained after selection for Census scoring, but evaluation evidence remains OOF/household-safe.
+
+This is stronger than reusing one global OOF latent matrix when downstream folds can otherwise inherit information from held-out households.
+
+## Architecture families
+
+The transport study may compare:
 
 ```text
-research.eph-census-transport-model@1
+direct shared-information model
+hurdle / two-part model
+staged latent dependency graph
 ```
 
-This is the scientific transport claim. It records exact parents, training population, fold/weighting policy, temporal-role assumptions, model/DAG, optional calibration anchors, OOF evidence, ablations, support/domain-shift diagnostics, monetary semantics and limitations.
+The direct model is a mandatory baseline. Historical RFC1→RFC4 stage count is evidence, not a required architecture.
 
-### Household welfare release
+The first modern lean labor-state cascade did not beat the direct Gamma baseline. Therefore extra stages must earn their place through final-welfare evidence rather than historical continuity.
+
+## Information-plane discipline
+
+The study currently distinguishes:
 
 ```text
-research.household-welfare@1
+P0    baseline shared/native information
+P1-R  reviewed Census-compatible deployment plane
+P2    richer EPH-only scientific information ceiling
 ```
 
-This is the downstream Poverty handoff.
+P2 may improve EPH prediction without being deployable on Census.
 
-Conceptually:
+The Census commissioning uses P1-R. This is a hard boundary:
 
 ```text
-sample_household_id
-welfare_period
-welfare_amount
-currency
-price_reference
-welfare_concept
-estimation_status
-transport_model_release_id
+better EPH-only evidence != permission to fabricate Census features
 ```
 
-The welfare amount is linear and household-level. Adult equivalence, poverty lines and FGT remain downstream.
+## Current scientific diagnosis
 
-Person-level stage outputs can remain restricted/internal audit evidence. Poverty should not need to understand classifiers, intermediate latent states or model-native log scales.
+The Sep 11 evidence closes the first information-frontier cycle:
 
-## Household welfare remains an open scientific choice
+- zero/positive presence is comparatively strong;
+- positive-income amount is severely compressed;
+- household aggregation inherits that compression;
+- P1-R materially improves the information/ranking frontier;
+- education is the strongest family in the bounded P1-R ablation, with labor/housing also useful;
+- true labor state has welfare signal, but the tested reconstruction captures essentially none of the oracle gain;
+- richer P2 adds scientific information but remains EPH-only;
+- positive amount remains the dominant error reservoir.
 
-The historical system predicted person `P47T` and several monetary components. The obvious candidate is to sum predicted person total income over the exact Census household, but this is not approved merely by convention.
+These are findings for the exact 2024-Q3 design, not permanent model truths.
 
-The transport study should be able to compare:
+## Semantic equivalence != temporal equivalence
+
+A Census concept can be semantically aligned while its donor-vintage value is stale for a later welfare period.
+
+The commissioned P1-R run explicitly defers temporal reconstruction. Any later target-period-state mechanism must:
+
+- preserve the original donor observation;
+- create a separate inferred/latent state;
+- identify exact target-period anchors if used;
+- be evaluated as transport science;
+- never rewrite Census source meaning in place.
+
+## Census commissioning
+
+Q8 scored the complete exact Census P1 matrix:
 
 ```text
-person total-income prediction -> household sum
-vs.
-direct household total-income target
-vs.
-explicitly justified hybrid
+469,172 persons
+141,863 households
 ```
 
-The selected construction must account for every household member and carry missing/invalid prediction policy explicitly.
+All identities reconciled technically.
+
+The result is nevertheless classified:
+
+```text
+COMPLETE_WITH_MATERIAL_TRANSPORT_CAVEATS
+```
+
+because support/domain shift is substantial:
+
+- weak-support Census-person fraction ≈ 0.288;
+- EPH-vs-Census domain-classifier AUC ≈ 0.874;
+- private/collective dwelling status is not available as a governed P1 indicator;
+- temporal reconstruction is deferred.
+
+The contract requires these limitations to travel with the downstream welfare artifact.
+
+## Output boundary: point vs predictive welfare
+
+A point welfare prediction remains useful internally, but the current downstream product is a distributional artifact:
+
+```text
+research.household-welfare-predictive/v1
+```
+
+The implemented representation is approximately:
+
+```text
+Y_h = max(0, location_h + R)
+```
+
+where:
+
+- `location_h` is the household point prediction for the commissioned Census household;
+- `R` is a governed empirical residual distribution calibrated from leakage-safe EPH OOF household evidence;
+- support is floored at zero;
+- the release records exact parents, scale and transport limitations.
+
+## Why predictive welfare is now canonical for the research seam
+
+The current point predictor is distributionally compressed. Q7 therefore tested low-tail prevalence under a nested household-safe empirical residual distribution.
+
+For both the richer P2 scientific ceiling and deployable P1-R arm, probabilistic threshold estimation materially reduced prevalence error relative to hard thresholding, with favorable direction in all five outer folds.
+
+This supports handing Poverty a welfare distribution rather than asking Poverty to invent uncertainty around a point model.
+
+## What the predictive release does not own
+
+It does not define:
+
+- poverty or indigence lines;
+- adult equivalence;
+- FGT0/1/2;
+- threshold-area geography;
+- aggregate confidence intervals;
+- official-statistic status.
+
+In particular:
+
+```text
+household predictive distribution
+!= aggregate poverty estimate uncertainty
+```
+
+The downstream current release path must keep `uncertainty_status=not_supplied` unless a separate method supplies it.
 
 ## Weight boundary
 
-These quantities are different systems:
+These remain distinct:
 
 ```text
 EPH survey / expansion weight
 != Census selection probability
-!= donor-frame inverse-probability quantity
-!= Poverty analysis weight
+!= optional donor-frame inverse-probability quantity
+!= Poverty analysis weight/estimand
 ```
 
-The encuestador owns only how the EPH survey design is used for transport fitting, calibration and evaluation. It preserves sampler design lineage but does not reinterpret it as model-training or poverty weight.
+`encuestador` preserves sampler lineage but does not reinterpret Census selection probability as model weight or final Poverty weight.
 
-## Repository-local authority
+## Current operational maturity
 
-The producer-local contract is being formalized in `encuestador-de-hogares` PR #8:
+The repository is no longer “runtime pending.” Main now contains:
 
-- `contracts/functional_interface.yaml`;
-- `docs/FUNCTIONAL_CONTRACT.md`;
-- modern README front door;
-- hardened `SYSTEM.yaml`.
+- real EPH execution;
+- direct/lean/hurdle science infrastructure;
+- strong welfare diagnostics;
+- information-frontier experiments;
+- nested predictive-distribution evidence;
+- full Census research commissioning;
+- predictive welfare release builder;
+- a weekly real-data research/reproducibility pulse.
 
-The heavy follow-ups are intentionally issues rather than hidden inside the docs change:
-
-- `encuestador-de-hogares#6` — training population, EPH survey design and household-aware OOF;
-- `encuestador-de-hogares#7` — variable-level transport-time roles and target-period state calibration.
+The remaining frontier is scientific validity/replication, not first executable transport infrastructure.
 
 ## Boundary summary
 
 ```text
+microdatos-EPH-INDEC
+    what exact EPH evidence exists?
+
 income-modeling-eph
-    asks: what predicts income inside EPH?
+    what EPH-only analysis/study evidence exists?
+
+eph-censo-aligner
+    what EPH/Census concepts are semantically comparable?
 
 samplerCensoARG
-    asks: which Census households/persons are represented?
+    which exact Census donor households/persons are scored?
 
 encuestador-de-hogares
-    asks: what target-period welfare can be inferred for those exact units from EPH evidence?
+    what target-period household welfare distribution can be inferred for those units?
 
 indice-pobreza-UBA
-    asks: given household welfare + method + lines + frame semantics, what poverty estimand follows?
+    given welfare distribution + frame + lines + method, what poverty estimand follows?
 ```
-
-This is the intended mature decomposition of the original EPH↔Census idea.

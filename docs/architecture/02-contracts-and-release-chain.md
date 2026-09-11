@@ -7,292 +7,245 @@ owners: [poverty-ecosystem-engineering]
 
 # Contracts and release chain
 
-The ecosystem integrates through **versioned artifacts**, not through shared working directories or sibling runtime imports. Each producer owns the transformation into its exported semantic boundary; each consumer validates the contract before using the artifact.
+The ecosystem integrates through versioned artifacts, not sibling runtime imports or shared working directories. Producers own semantic transformation into an exported boundary; consumers verify identity, schema, lineage, QA and limitations before use.
 
 ## Contract envelope
 
-Unless a producer defines a stricter format, a scientific release should expose the equivalent of:
+A scientific handoff should expose the equivalent of:
 
 ```text
 release/
 ├── manifest.json
 ├── data.parquet | data.csv
 ├── qa.json
-├── LIMITATIONS.md
-└── checksums.sha256
+├── limitations / warnings
+└── checksums
 ```
 
-The manifest must be sufficient to recover:
+A consumer must not infer artifact type, entity identity, period, monetary reference or status from filenames or directory location.
 
-- artifact type and schema version;
-- exact producer revision/release identity;
-- exact parent artifact identities;
-- entity level and stable identifier namespace;
-- temporal coverage and relevant reference periods;
-- measure semantics and units;
-- method/version identity;
-- files and hashes;
-- status and limitations.
-
-The consumer must not infer any of these from filenames or directory location.
-
-## Main artifact chain
-
-### EPH source and analysis
-
-`microdatos-EPH-INDEC` produces a versioned EPH source artifact:
+## Current research chain
 
 ```text
-artifact:publicdata.eph-microdata@1
+publicdata.eph-microdata@1
+        |
+        +-------------------------> research.eph-analysis-frame@1
+        |                                  (`income-modeling-eph`)
+        |
+        v
+research.eph-census-semantic-feature-plane@1
+        (`eph-censo-aligner`)
+        ^
+        |
+research.census-frame@1
+research.census-target-year-sample/v2
+        (`samplerCensoARG`)
+        |
+        +-------------------------------+
+                                        |
+                                        v
+                             encuestador research run
+                             + transport diagnostics
+                                        |
+                                        v
+                   research.household-welfare-predictive/v1
+                                        |
+                  quarter-specific poverty-line/basket input
+                                        |
+                                        v
+                           predictive FGT measurement
+                                        |
+                                        v
+                         poverty-estimate-release/v2
+                                        |
+                                        v
+                            argentina-poverty-atlas
 ```
 
-`income-modeling-eph` consumes that source and currently produces:
+The last two deployment edges are not fully canonical on default branches yet: the province/national Poverty producer is validated in open `indice-pobreza-UBA#27`, and detached real-release Atlas ingest is validated in open `argentina-poverty-atlas#23`.
+
+## EPH source authority
+
+`microdatos-EPH-INDEC` produces:
 
 ```text
-artifact:research.eph-annual-preprocessed@1
-artifact:research.eph-modeling-dataset@1
-artifact:research.eph-income-model@1
+publicdata.eph-microdata@1
 ```
 
-The target architecture narrows the public meaning of the first artifact: it should be a model-neutral EPH analysis frame. Experiment-specific feature engineering, target transforms, split assignments, and model views remain downstream inside `income-modeling-eph`.
-
-Current caution: the tracked annual inputs are characterized historical artifacts, not yet a source-reproducible modern analysis-frame producer. Their monetary reference and exact historical preprocessing lineage remain partly unresolved. The target contract must not be described as current source-backed production until those parents are reconstructed.
-
-### Census household sample and optional target-year composition
-
-`samplerCensoARG` produces:
+The Sep 11 transport science pins the exact 2024-Q3 parent:
 
 ```text
-artifact:research.census-sample@1
+eph-2024-q3-3b6a7a15c4af
 ```
 
-The current and target architecture keep the **household sample** as the primary Census-derived handoff. A separate post-sampling population-calibration product is not required by the present poverty/inference design.
+The release preserves source custody and native household/person identity. Acquisition does not define targets, modeling cohorts, semantic alignment or monetary conversion.
 
-The sampler may operate in two scientifically distinct modes:
+## EPH-only analysis authority
+
+`income-modeling-eph` now has an implemented and real-data-proven neutral boundary:
 
 ```text
-A. donor-frame sample
-   CPV donor frame -> deterministic household sample
-
-B. target-year department-composition sample
-   exact CPV donor frame
-   + exact population-by-department release for year y
-   -> department-specific household selection probabilities
-   -> synthetic sample whose represented person mix approximates y
+research.eph-analysis-frame@1
 ```
 
-The modern target-year contract separates donor and target population authority:
+It consumes exact EPH quarter releases, preserves `CODUSU + NRO_HOGAR + COMPONENTE`, preserves available survey-design fields without applying them, and rejects hidden target/rank/deflation semantics in the neutral plane.
+
+It also implements:
 
 ```text
-D[d]   = exact donor-frame person mass in department d
-T[d,y] = exact target-year person population in department d
-c      = global sampling intensity
-
-p[d,y] = c * T[d,y] / D[d]
+research.eph-income-study-cohort@1
 ```
 
-before explicit probability bounds.
+which is a study-specific EPH artifact. Live cohort execution remains gated by an **approved** monetary-conversion parent; this does not block the separate `encuestador` transport study from using exact native EPH evidence under its own declared target semantics.
 
-`D[d]` is measured from the exact Census donor frame. `T[d,y]` comes from one exact demographic parent release. The target demographic source therefore does **not** need to provide a 2010 denominator simply because the historical sampler used one projection table for both numerator and denominator.
+`income-modeling-eph` is therefore a parallel EPH-only scientific producer, not the Census scoring runtime.
 
-With household selection and all members retained:
+## Census frame and target-year sample
+
+`samplerCensoARG` owns the Census-side identity and selection boundary. The active contracts used by the real alignment are:
 
 ```text
-E[selected_persons[d,y]] = c * T[d,y]
+research.census-frame@1
+research.census-target-year-sample/v2
 ```
 
-before bounds. The external target is person mass, not target-year household totals.
+The target-year sample preserves:
 
-In both modes, the selected records remain donor households/persons from the declared Census frame. Target-year population information changes **department person mass only**; it does not independently update age, education, employment, household size, housing, or other within-department distributions.
+- exact donor-frame identity;
+- `frame_vintage=2010` distinct from target year;
+- household as the selection unit;
+- complete person membership for selected households;
+- target person mass by department;
+- explicit `selection_probability`;
+- separately named design inverse-probability semantics;
+- no generic populated `analysis_weight`/`sample_weight` that could be silently reused downstream.
 
-A target-year sample release should make at least the following explicit:
-
-```yaml
-frame_vintage: 2010
-sampling_target_period: <year/date or null>
-population_by_department_parent: <exact release id or null>
-selection_unit: household
-target_mass_unit: person
-selection_algorithm: <exact method id>
-global_sampling_intensity: <value>
-donor_person_mass_field: donor_person_mass
-target_person_mass_field: target_person_mass
-selection_probability_uncapped_field: selection_probability_uncapped
-selection_probability_field: selection_probability
-probability_bound_policy: <exact policy id>
-```
-
-The release must preserve the exact demographic parent identity, exact donor-frame identity, department identity relation and probability formula. If a probability bound changes the uncapped expectation, the affected departments and target-share distortion must remain observable in QA.
-
-#### Weight contract
-
-Do not overload one generic `sample_weight` field.
-
-The contract must distinguish:
+The 2024 research integration uses exact sample:
 
 ```text
-selection_probability
-optional design_inverse_probability_weight
-optional analysis_weight
+census-sample-2024-0839713eafea8d1b
 ```
 
-This distinction is not cosmetic. If department probabilities are intentionally changed to produce a target-year geographic composition, applying `1 / selection_probability` mechanically as the downstream analysis weight would approximately undo that rebalancing and recover donor-frame composition instead.
+The realized sample is a synthetic target-year-composition sample of donor Census units. It is not a 2024 Census.
 
-The consumer therefore receives an explicit authorized analysis-weight semantic or intentionally consumes the realized synthetic-sample composition. No downstream system may infer the intended estimand from a generic weight column.
+## Semantic alignment
 
-`contract:population-frame` remains useful as a **semantic adapter expected by Poverty**, but it need not be a separately produced calibration artifact. It may be satisfied directly from one exact governed Census sample release plus its declared design/analysis semantics.
+`eph-censo-aligner` owns the cross-source semantic plane, not statistical transport validity.
 
-### Semantic alignment
-
-`eph-censo-aligner` currently names its release:
+The real 2024-Q3 / CPV-2010 run materialized:
 
 ```text
-artifact:research.eph-census-crosswalk@1
+eph-cpv2010-semantic-plane-2024q3-v1
 ```
 
-Despite the historical name, this is **not a geographic crosswalk**. It is a directional variable/semantic alignment release. It should declare, for each candidate deployment feature, one of:
+with 47,564 EPH persons and 469,172 Census persons.
+
+The Sep 11 reviewed P1-R plane contains 21 approved concepts; `H11` and `H16` are rejected, and temporal reconstruction is explicitly outside this commissioned plane. Large but valid `IX_TOT` values remain unclipped.
+
+A concept may be semantically comparable without being a valid target-period state variable. That later temporal/transport judgment belongs to `encuestador-de-hogares`.
+
+## Survey-to-Census inference
+
+`encuestador-de-hogares` is the active transport instrument. Its current mainline science now includes:
+
+- household-group-safe folds;
+- direct and staged/lean baselines;
+- hurdle income models with explicit zero/positive/nonresponse semantics;
+- strong person/household diagnostics and oracle comparisons;
+- paired information-plane experiments;
+- nested empirical-residual predictive distributions;
+- full Census research commissioning;
+- a governed predictive welfare release builder.
+
+The downstream artifact implemented on main is:
 
 ```text
-shared_observable
-derived_shared
-stage_target
-unsupported
-research_only
+research.household-welfare-predictive/v1
 ```
 
-A real-vintage release must also preserve question wording, universe, direction, category losses, recode provenance, and reviewer status.
-
-### Survey-to-Census inference
-
-The revived `encuestador-de-hogares` boundary produces:
+Current representation:
 
 ```text
-artifact:research.eph-census-transport-model@1
-artifact:research.household-welfare@1
+Y_h = max(0, location_h + R)
 ```
 
-The transport-model release owns the deployment DAG, stage estimators, out-of-fold training policy, support/domain-shift diagnostics, model evidence, and exact training/scoring parents.
+where `location_h` is the commissioned household point-welfare location and `R` is an empirical residual distribution calibrated from leakage-safe EPH OOF evidence. The release records exact lineage, monetary scale, support policy and transport caveats.
 
-The welfare release is deliberately simpler. Poverty should receive a resolved welfare concept rather than a model-native prediction column. At minimum it should make explicit:
+The welfare artifact does **not** own poverty lines, adult equivalence or FGT mathematics. Changing the threshold should not require refitting the welfare model.
 
-```yaml
-entity:
-  level: household
-  id_namespace: <exact census-sample namespace>
+### Point welfare vs predictive welfare
 
-measure:
-  concept: household_total_income
-  amount_field: welfare_amount
-  currency: ARS
-  price_reference: <declared reference>
+A deterministic/point welfare value and a predictive welfare distribution are different interfaces. The current research path promotes the predictive distribution because low-tail prevalence was materially better calibrated than thresholding the compressed point prediction.
 
-time:
-  frame_vintage: <census vintage>
-  sampling_target_period: <sample target period, if any>
-  welfare_period: <target period>
+This does not mean the residual ECDF provides complete aggregate-estimate uncertainty. Poverty must declare uncertainty separately.
 
-lineage:
-  census_sample_release: <exact id>
-  transport_model_release: <exact id>
-  monetary_conversion_release: <exact id>
-```
+## Monetary references
 
-If the scientific design retains person-level predictions, they are diagnostic/intermediate outputs unless a downstream contract explicitly consumes them.
+`IPC-Argentina` publishes immutable `research.argentina-monetary-conversion/v1` **candidate** releases under a curated official-panel method and exposes exact coverage/maturity metadata. Scheduled candidate publication may remain green under thin latest-period coverage while the explicit approval gate remains stricter.
 
-### Monetary conversion
+Therefore:
 
-`IPC-Argentina` is the target owner of monetary-reference semantics. A future approved conversion artifact should look conceptually like:
+- candidate publication != approved conversion;
+- analytical price product != official IPC authority;
+- consumers requiring an approved conversion must continue to fail closed when approval is absent.
+
+## Poverty-line / basket input
+
+`canastasINDEC` consumes governed IPC candidate lineage and source basket data. Main now includes a period-parameterized bounded slicer over the existing v2 basket candidate, allowing a complete quarter such as 2024-Q3 to be selected for the research seam without changing acquisition or basket science.
+
+The basket/line producer does not define Census geography. Threshold-area interpretation remains a separate boundary.
+
+## Poverty measurement
+
+`indice-pobreza-UBA` main preserves the deterministic v2 semantics and now also contains a predictive-welfare measurement path.
+
+For the first predictive representation, Poverty integrates the marginal household welfare distribution against poverty/indigence thresholds to obtain exact empirical:
 
 ```text
-artifact:research.argentina-monetary-conversion@1
+FGT0
+FGT1
+FGT2
 ```
 
-It must identify source reference, target reference, factor/method, parent price release, period classification (`observed`, `derived`, `interpolated`, `projected`, etc.), and review status.
+while keeping deterministic poverty semantics available in parallel.
 
-Modeling and poverty code should consume the declared conversion result. They should not reproduce IPC logic or guess the price reference of an old annual file.
-
-### Poverty lines and threshold binding
-
-Poverty requires two concerns that must remain distinct from generic monetary conversion:
+It produces/validates the contract:
 
 ```text
-contract:poverty-lines
-contract:threshold-area-binding
+poverty-estimate-release/v2
 ```
 
-A poverty-line release answers **what monetary threshold applies for a declared concept, area, and period**. A threshold-area binding answers **which threshold area applies to each population unit**. Neither is the same as geography identity itself.
+A release declares capabilities, exact IDs, parents, geography level, status and uncertainty state. It is a scientific artifact, not a browser data shape.
 
-Current evidence sharpens the target split:
+Open PR `indice-pobreza-UBA#27` adds the bounded local real producer from predictive welfare + Census frame + six regional lines to a detached release with 24 provinces + `ARG`, persons/households, poverty/indigence and FGT0/1/2. Real acceptance produced 300 facts, but because the PR remains open this is validated pending integration, not current `main` capability.
 
-- `canastasINDEC` has an approved candidate method around six source-native basket-region IDs (`gran_buenos_aires`, `pampeana`, `noroeste`, `noreste`, `cuyo`, `patagonia`) and exact official-source nominal CBA/CBT inputs. Its modern target is the governed **threshold value** release, not geographic membership. Legacy backfill/mean-imputation/repeated-tail outputs remain compatibility evidence only.
-- `argentina-geography` is the natural candidate owner of the source-backed **territorial interpretation/binding** from an exact governed Census geography to those six region IDs. This should be a tabular interpretation/crosswalk release, not a dissolved six-region geometry unless a consumer later needs geometry. The first concrete work is tracked in `argentina-geography#36`.
-
-This split matters especially in Buenos Aires: official INDEC regional nomenclature places CABA and specified Buenos Aires partidos in Gran Buenos Aires, while the remainder of Buenos Aires belongs to Pampeana. A province-only lookup is therefore insufficient.
-
-The target release chain is consequently:
+Its intended status is explicitly:
 
 ```text
-exact Census geography release
-        ↓
-reviewed geography→threshold-area binding
-
-exact CBA/CBT source snapshots
-        +
-(optional) exact monetary-conversion release
-        ↓
-governed poverty-lines release
+research_estimate
+uncertainty_status = not_supplied
 ```
 
-Poverty consumes both artifacts and joins by stable IDs. The sampler does not own the six-region classification and the basket producer does not own Census geography.
+## Geography and Atlas
 
-### Poverty release
+`argentina-geography` supplies exact geography products independently of poverty values. The Atlas already has an exact IGN 24-province parent with zero-preserving province IDs.
 
-`indice-pobreza-UBA` v2 consumes:
+Canonical Atlas `main` remains a synthetic, `noindex` demonstration surface. Open PR `argentina-poverty-atlas#23` validates strict ingest of a detached real `poverty-estimate-release/v2`, including checksums, status, 300-fact schema and 24 province IDs, without recomputation or invented uncertainty.
 
-```text
-contract:population-frame
-contract:deployable-household-welfare
-artifact:research.poverty-method@1
-contract:poverty-lines
-contract:threshold-area-binding
-```
+Until that PR merges, the public-product contract is proven on a branch but not canonical runtime behavior.
 
-and produces:
+## Cross-repository rule
 
-```text
-artifact:poverty-estimate-release@2
-```
-
-For the current architecture, `contract:population-frame` should be understood as a semantic view over one exact `research.census-sample@1` release plus the authorized design/analysis semantics required by the estimand. It does not imply a separate post-sampling calibration producer.
-
-The release contains governed poverty facts, capabilities, geography-join contract, QA, limitations, manifest, and checksums. It does not carry model runtime or geometry.
-
-Current v2 code already enforces a strong in-memory semantic boundary: exact frame/welfare ID coverage, exact monetary-reference equality, exact threshold-area coverage, and no model/GIS/network/file-I/O logic inside the contract module. Producer topology should be updated only when real upstream adapters are accepted, not merely to follow proposed repository names.
-
-### Geography and Atlas
-
-`argentina-geography` produces governed Geography Releases:
-
-```text
-artifact:arggeo.geography-release@1
-```
-
-It can also produce separately governed relation/crosswalk/interpretation releases when a concrete consumer needs an Argentina-specific territorial mapping. Those interpretation products do not replace source-native geography identities.
-
-`argentina-poverty-atlas` consumes an exact poverty estimate release plus an exact geography release and joins them by governed ID. It must not derive new scientific poverty estimates in the browser.
-
-## Cross-repository integration rule
-
-The preferred dependency is:
+Prefer:
 
 ```text
 consumer -> artifact contract -> immutable release
 ```
 
-not:
+over:
 
 ```text
-consumer -> sibling repository checkout -> internal Python function
+consumer -> sibling checkout -> internal function
 ```
 
-Small duplicated validation code is acceptable when it prevents the estate from acquiring a premature shared-framework dependency. Extract common code only after repeated **semantics**, not merely repeated syntax, have been proven.
+Small duplicated validators are acceptable while contracts are young. Extract shared runtime only after repeated stable semantics demonstrate a real maintenance burden.

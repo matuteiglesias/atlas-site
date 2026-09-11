@@ -1,0 +1,144 @@
+schema_version: 1
+last_refresh: '2026-09-11'
+docs:
+  repository: matuteiglesias/atlas-pobreza-docs
+  branch: docs/autonomous-maintenance-refresh-20260911
+  base_main: f8e50f9b09fc66531dac526185d9611d2ec0a5f9
+  refresh_anchor: 059d828be1361aff7b427cf179318d16bdfddf3f
+  verification: github_pr_ci
+
+upstreams:
+  microdatos-EPH-INDEC:
+    ref: master
+    sha: 492bc92f44894239e58ce40859c5b2e6e7cb60f3
+    evidence_status: real-data-proven acquisition authority
+    relevant_contracts:
+      - publicdata.eph-microdata@1
+    notes:
+      - exact EPH 2024-Q3 parent used by current transport science is eph-2024-q3-3b6a7a15c4af
+
+  income-modeling-eph:
+    ref: main
+    sha: 774c290c8befccb4f7dc4c78fe6a47a334443a05
+    evidence_status: real-data-proven EPH-only neutral frame; study cohort implemented
+    relevant_contracts:
+      - research.eph-analysis-frame@1
+      - research.eph-income-study-cohort@1
+    notes:
+      - not the active Census scoring runtime
+      - live income-study cohort requires an approved monetary-conversion parent
+
+  samplerCensoARG:
+    ref: main
+    sha: b5810255db51aa5d33eb3368cbcd4f94194e48d0
+    evidence_status: real-data-proven target-year sample authority
+    relevant_contracts:
+      - research.census-frame@1
+      - research.census-target-year-sample/v2
+    notes:
+      - weekly v2 contract pulse merged Sep 11
+      - large local CPV2010 payload is not rebuilt in hosted CI
+
+  eph-censo-aligner:
+    ref: main
+    sha: d23878c167d2f70759b1e903cf4999a23325a55e
+    evidence_status: real-data-proven semantic plane; local materialization portability incomplete
+    relevant_contracts:
+      - research.eph-census-semantic-feature-plane@1
+    notes:
+      - real plane eph-cpv2010-semantic-plane-2024q3-v1
+      - 21-field P1-R; H11 and H16 rejected
+      - capture successful local IX_TOT collective-dwelling fix before regeneration
+
+  encuestador-de-hogares:
+    ref: main
+    sha: 2b3f78ec387f78acc03168b443e4039c66ee0068
+    evidence_status: research-commissioned on real EPH/Census chain
+    relevant_contracts:
+      - research.household-welfare-predictive/v1
+    notes:
+      - Q2-Q8 Sep 11 science complete through Census commissioning
+      - 469172 Census persons / 141863 households scored
+      - weak-support person fraction approximately 0.288
+      - EPH/Census domain-classifier AUC approximately 0.874
+      - weekly predictive-welfare pulse and Wednesday real EPH acceptance merged
+
+  IPC-Argentina:
+    ref: main
+    sha: 9a6a54bd3d591c33ae4363e9707125efcc66f620
+    evidence_status: immutable candidate monetary-conversion authority
+    relevant_contracts:
+      - research.argentina-monetary-conversion/v1
+    notes:
+      - candidate publication is separate from strict approved-mode eligibility
+
+  canastasINDEC:
+    ref: main
+    sha: 8f13f08f41a3c35c551a54787fce3762e7a104dc
+    evidence_status: bounded research poverty-input integration
+    relevant_contracts:
+      - governed v2 basket candidate
+    notes:
+      - quarter-parameterized slice merged; 2024-Q3 is supported for current research seam
+
+  indice-pobreza-UBA:
+    ref: main
+    sha: 96ccf92fd418eba5e8ddc56d3db23bb228f64292
+    evidence_status: predictive-welfare FGT seam merged; province producer pending integration
+    relevant_contracts:
+      - poverty-estimate-release/v2
+    pending:
+      pr: 27
+      head_sha: af05290e8d1e96e5ccf7ff4901f000df2e11675e
+      status: open
+      evidence: validated local 24-province + ARG producer; 300 facts
+    notes:
+      - research_estimate only
+      - aggregate uncertainty not supplied
+
+  argentina-geography:
+    ref: main
+    sha: 71ac7d5a08fe55775d7d84fd5f3a18608bb64d67
+    evidence_status: approved active geography authority
+    relevant_contracts:
+      - exact IGN 24-province Geography Release
+    notes:
+      - zero-preserving province identity is available for Atlas/Poverty joins
+
+  argentina-poverty-atlas:
+    ref: main
+    sha: cb958f5fa1346be1949d0be3cfa8c9cbb729ffa8
+    evidence_status: synthetic/noindex canonical main; real ingest pending integration
+    pending:
+      pr: 23
+      head_sha: bbfe648e9da00fc57f26968df22a4458f5a3c1e3
+      status: open
+      evidence: battle-tested detached poverty-estimate-release/v2 ingest
+    notes:
+      - do not describe public main as real-data Atlas until integration/publication occurs
+
+known_live_boundaries:
+  - exact EPH quarter -> real EPH/Census semantic plane
+  - governed target-year Census sample -> aligned scoring frame
+  - household-safe EPH transport experiments -> full Census research commissioning
+  - commissioned P1-R scoring -> research.household-welfare-predictive/v1
+  - predictive household welfare -> predictive FGT measurement on Poverty main
+  - 2024-Q3 basket input slice available for current research seam
+
+known_open_questions:
+  - material EPH/Census support and domain shift
+  - private-versus-collective dwelling universe treatment
+  - target-period temporal reconstruction of donor-vintage state
+  - amount-model frontier after information-plane gains
+  - aggregate poverty-estimate uncertainty propagation
+  - second-period/year replication
+  - merge/promotion gate for real province Poverty release
+  - merge/publication gate for Atlas real-release ingest
+
+next_refresh_triggers:
+  - indice-pobreza-UBA PR 27 merges, closes, or is superseded
+  - argentina-poverty-atlas PR 23 merges, closes, or is superseded
+  - eph-censo-aligner captures the successful local IX_TOT materialization fix
+  - a second target period/year is commissioned through the transport chain
+  - aggregate uncertainty semantics are added to Poverty
+  - IPC monetary-conversion approval status changes for consumers that require approved mode
