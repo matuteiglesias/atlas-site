@@ -4,7 +4,8 @@ docs:
   repository: matuteiglesias/atlas-pobreza-docs
   branch: docs/autonomous-maintenance-refresh-20260911
   base_main: f8e50f9b09fc66531dac526185d9611d2ec0a5f9
-  refresh_head: pending_final_verification
+  refresh_anchor: 059d828be1361aff7b427cf179318d16bdfddf3f
+  verification: github_pr_ci
 
 upstreams:
   microdatos-EPH-INDEC:
