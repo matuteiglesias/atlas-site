@@ -7,184 +7,191 @@ owners: [poverty-ecosystem-engineering]
 
 # Semantics, identities, and clocks
 
-The hardest failures in this ecosystem are rarely syntax errors. They are **semantic compression errors**: two different concepts are given the same field, clock, identifier, or status and later treated as interchangeable. This page records the cross-system distinctions that must remain explicit.
+The hardest failures in this ecosystem are usually semantic compression errors: two distinct concepts are given one field, clock, identifier or status and are later treated as interchangeable. The Sep 2026 real-data integration sharpened several distinctions that must remain explicit.
 
-## Identity
+## Identity is artifact-scoped
 
-Every release should declare the entity level and identifier namespace it expects.
+Every release declares entity level and identifier namespace.
 
-Examples include:
+Examples:
 
-- EPH household/person keys within an exact survey release;
-- Census household/person IDs within an exact sample/frame release;
-- `radio_2010_id`, department, and province identities tied to exact Geography Releases;
-- household IDs preserved unchanged from Census sample through welfare inference into Poverty.
+- EPH household: `CODUSU + NRO_HOGAR`;
+- EPH person: `CODUSU + NRO_HOGAR + COMPONENTE`;
+- Census sample household/person IDs from the exact sampler release;
+- geography IDs tied to an exact Geography Release;
+- household IDs preserved from Census sample through welfare inference into Poverty.
 
-No downstream system may recreate identity from row order. No fuzzy or positional join is allowed in a scientific release.
+No scientific join may reconstruct identity from row order, approximate names or fuzzy matching.
 
-## Geography identity vs threshold area
+The Sep 11 Census commissioning reconciled all 469,172 Census persons into 141,863 households without unmatched or duplicate scoring identities. That is technical/identity acceptance, not proof of transport validity.
 
-A geography ID answers **where/which governed geographic unit is this?** A poverty-threshold area answers **which basket/threshold regime applies to this unit?**
+## Geography identity != threshold area
 
-They may be related through a governed binding, but they are not the same object. `argentina-geography` owns geography identity; Poverty consumes a separate `threshold-area-binding` contract.
+A geography ID answers which governed territorial unit a row belongs to. A poverty-threshold area answers which CBA/CBT regime applies.
 
-## EPH/Census feature classes
+They can be linked by a governed binding, but they are different objects. Poverty-region vocabulary must not be smuggled into Census sample identity.
 
-The deployment vocabulary is:
+## EPH/Census semantic plane
 
-- `shared_observable` — defensibly observed on both source sides;
-- `derived_shared` — constructible deterministically on both sides under an approved rule;
-- `stage_target` — observed in EPH but absent from Census and therefore learned inside the transport graph;
-- `unsupported` — not defensibly available for the current deployment design;
-- `research_only` — valid for EPH science but forbidden as an external Census deployment feature.
-
-This vocabulary belongs to semantic alignment. The statistical consequences of using the feature plane belong to the inference instrument.
-
-## Deployment DAG
-
-The historical `encuestador-de-hogares` cascade contained four broad waves. The modern abstraction is a dependency graph, not a fixed number of Random Forest stages.
-
-For each learned node, the graph must declare:
-
-```yaml
-target: <semantic target>
-depends_on: [<features or prior nodes>]
-representation: hard_class | probabilities | continuous
-estimator_family: <candidate family>
-validation: <metrics and slices>
-```
-
-If a downstream node consumes an upstream learned node, training must use **out-of-fold predicted intermediates**, not the observed upstream labels. After model selection, stages may be refit on the full training frame for scoring.
-
-This prevents a train/deployment mismatch in which downstream models learn from perfect labels that will not exist when the graph is applied to Census.
-
-## Monetary semantics
-
-A number such as `P47T = 100000` is incomplete without monetary reference.
-
-The ecosystem distinguishes:
+The real alignment now has an exact materialized plane:
 
 ```text
-source nominal amount
-    -> approved monetary conversion
-    -> declared reference amount
-    -> optional statistical transform
-    -> model prediction
-    -> inverse/retransformation
-    -> deployable welfare amount
+eph-cpv2010-semantic-plane-2024q3-v1
 ```
 
-A log target is a modeling representation, not a welfare concept. A poverty consumer must never need to infer whether it should apply `10 ** prediction`, which IPC vintage was used, or whether rounding/clipping occurred.
+The active P1-R subset contains 21 approved concepts. `H11` and `H16` are rejected. `P1-S` remains the narrow stable subset used for stricter temporal interpretations.
 
-The historical EPH preparation normalized nine monetary variables to a January-2016 analytical reference through IPC-Argentina. That behavior is genealogy, not current monetary authority until an exact conversion release and lineage are approved.
+Semantic alignment answers whether a concept is comparable enough to enter the reviewed plane. It does **not** answer whether a donor-vintage Census value is a valid observation of a later welfare period.
 
-## Separate clocks
+### Semantic comparability != temporal validity
 
-At minimum, preserve these fields when relevant:
+For example, a labor-status concept can be semantically harmonized while still being a 2010 donor-vintage state. Treating it as observed 2024 labor state would require a separate transport-time assumption or reconstruction mechanism.
 
-```yaml
-training_period: <EPH period used to learn relationships>
-frame_vintage: <Census vintage underlying donor units>
-sampling_target_period: <period whose department person mass informs sampling, if any>
-welfare_period: <period for which welfare is interpreted>
-price_reference: <monetary reference period>
-poverty_line_period: <period of threshold values>
-geography_vintage: <exact geography release/vintage>
+The Sep 11 commissioning deliberately deferred temporal reconstruction rather than silently overwriting donor observations.
+
+## Information plane != scientific information ceiling
+
+The current transport science uses distinct feature frontiers:
+
+```text
+P0    baseline transport information
+P1-R  reviewed Census-compatible plane
+P2    richer EPH-observable research ceiling
 ```
 
-A valid example may legitimately have:
+A P2 variable may be scientifically valid and predictive inside EPH while being unavailable or unjustified on Census. Therefore:
 
-```yaml
-frame_vintage: 2010
-sampling_target_period: 2024
-welfare_period: 2024-Q1
+```text
+P2 improvement
+!= permission to deploy P2 on Census
 ```
 
-That does **not** make the units a 2024 Census. It means that Census-2010 donor households were sampled with department probabilities informed by a 2024 population-by-department source and then passed to a welfare inference targeting 2024-Q1.
+The final Sep 11 adjudication is that P1-R materially improves the transport frontier; richer P2 adds additional scientific information in the matched experiments; the deployable Census commissioning remains on frozen P1-R.
+
+## Income target semantics
+
+For the commissioned EPH 2024-Q3 transport study:
+
+- valid supervision distinguishes true zero, positive income and unavailable response;
+- `P47T == -9` and true missing are unavailable supervision, not zero income;
+- person-level income is modeled before household aggregation;
+- household evaluation requires complete observed member income when comparing against observed household totals;
+- no EPH survey/design weights are used in fitting or the reported Sep 11 evaluation.
+
+The main baseline failure is positive-income magnitude/distributional compression, not simply zero/positive classification. That is an experiment-specific scientific result, not a universal property of every future model.
+
+## Survey weights != Census sampling != Poverty estimand
+
+Keep these objects separate:
+
+```text
+EPH survey / expansion weight
+        !=
+Census selection_probability
+        !=
+optional donor-frame inverse-probability weight
+        !=
+Poverty analysis semantics
+```
+
+`samplerCensoARG` owns how donor households enter the target-year sample. `encuestador-de-hogares` owns how EPH survey design is or is not used in its transport study. `indice-pobreza-UBA` owns the final estimand/analysis semantics it accepts.
+
+A historical field named `sample_weight` is never sufficient authority to infer any of these meanings.
 
 ## Target-year sampling semantics
 
-The target-year department population adjustment belongs to `samplerCensoARG`, but two population quantities must stay separate:
+The sampler separates:
 
 ```text
-D[d]   = exact donor-frame person mass in department d
-         measured from the exact Census donor frame
-
-T[d,y] = exact target-year person population in department d
-         supplied by one governed demographic release
+D[d]   exact donor-frame person mass in department d
+T[d,y] exact target-year person mass for department d
+c      global sampling intensity
 ```
 
-The basic uncapped design is:
+with the target-year household inclusion design based on:
 
 ```text
-selection_probability[d,y]
-  = c * T[d,y] / D[d]
+p[d,y] = c * T[d,y] / D[d]
 ```
 
-where `c` is a global sampling intensity.
+under its governed bound policy.
 
-The historical implementation used a single projection table's `population[d,y] / population[d,2010]` ratio. That is genealogy / a special approximation, not a requirement of the modern contract. The target demographic source does not need to supply the donor denominator; the donor frame is authoritative for its own person count.
+The selection unit is the household and every member is retained; the target mass is person mass. Target-year sampling changes the department mixture, not every within-department demographic or socioeconomic state.
 
-The important unit distinction is:
+Thus:
 
 ```text
-selection_unit = household
-target_mass_unit = person
+frame_vintage = 2010
+sampling_target_year = 2024
 ```
 
-If household `h` has `n_h` donor persons and every household in department `d` is selected with probability `p[d,y]`, retaining all household members gives:
+does not mean the selected records are observed 2024 Census records.
 
-```text
-E[selected_persons[d,y]]
-  = p[d,y] * D[d]
-  = c * T[d,y]
+## Separate clocks
+
+A real poverty research run may need all of:
+
+```yaml
+eph_training_period: 2024-Q3
+census_frame_vintage: 2010
+sampling_target_period: 2024
+welfare_period: 2024-Q3
+monetary_reference_period: <declared by welfare/basket parents>
+poverty_line_period: 2024-Q3
+geography_vintage: <exact geography release>
 ```
 
-before probability bounds. Thus household cluster sampling preserves household integrity while targeting department-level **person mass in expectation**. It does not imply a target-year household-count distribution.
+Never collapse these into one generic `year`.
 
-If `c*T[d,y]/D[d] > 1`, the requested intensity cannot be realized by the basic Bernoulli design. Any cap, certainty-stratum behavior or alternative must be named, observable in QA and reflected in the expected target-share diagnostics; silent clipping is not acceptable.
+A stable Census sample ID reused across welfare periods would describe repeated synthetic scoring snapshots, not observed longitudinal households.
 
-The information update is deliberately narrow: **department person mass changes; within-department joint distributions do not**. Age, education, employment, household size, housing, and other characteristics remain inherited from the Census donor frame unless another explicit scientific mechanism later updates them.
+## Point welfare != predictive welfare distribution
 
-Equal household inclusion probability within each department also gives every donor person the same marginal inclusion probability within that department. For sufficiently large samples, donor-frame person/household characteristics should therefore remain statistically represented, while national marginals can shift mechanically because the department mixture changed. This is a sampling assumption to diagnose and disclose, not evidence of contemporaneous calibration on those dimensions.
-
-## Demographic source authority
-
-`samplerCensoARG` owns the use of `T[d,y]`, not the demographic estimate itself.
-
-A target-year run must pin an exact population-by-department release and preserve its own source/method/vintage. Different target periods may legitimately use different approved demographic source families. The Census donor frame separately supplies `D[d]`.
-
-Legacy committed population tables remain evidence until their provenance is exact. In particular, repository history shows that a later `proy_pop*` file replaced an older table in the historical sampler without the surrounding official-source comment being updated. A filename or current legacy code path is therefore not enough to promote demographic authority.
-
-## Selection probability and analysis weights
-
-Do not collapse these into one generic `weight` without lineage.
-
-- **selection probability** — probability with which a donor household, and therefore each of its members, entered the sample;
-- **design inverse-probability weight** — optional `1 / p` quantity for inference back toward the Census donor-frame design;
-- **analysis weight** — weight, if any, authorized for the specific downstream estimand.
-
-These can point in different directions. When department probabilities are intentionally changed to create a target-year person distribution, automatically applying `1 / p` downstream can undo that rebalancing.
-
-For person-level target-year estimands, the selected person mass is already geographically rebalanced in expectation. Household-level estimands require separate care because target-year population-by-department values do not determine target-year household totals. The consumer may not infer the intended estimand from a historical `sample_weight` field.
-
-## Welfare unit
-
-The inference boundary must declare whether its terminal welfare concept is person-level or household-level and how any aggregation is performed. The preferred poverty handoff is household-level because the conversion from person predictions to household welfare is part of the inference model, not part of FGT mathematics.
-
-Adult-equivalence or per-adult-equivalent treatment, when required by the poverty method, remains governed by the Poverty method contract rather than being hidden inside a model output.
-
-## Evidence states
-
-A successful pipeline run establishes software execution, not substantive validity. Preserve at least the distinction between:
+The current predictive household-welfare release represents approximately:
 
 ```text
-technical acceptance
-source/semantic acceptance
-model/transport validation
+Y_h = max(0, location_h + R)
+```
+
+where `location_h` is a point welfare prediction and `R` is an empirical residual distribution calibrated from household-safe EPH OOF evidence.
+
+This distinction matters because the baseline conditional mean is compressed. In Sep 11 Q7 evidence, probabilistic low-tail prevalence substantially outperformed hard thresholding for both the deployable P1-R and richer P2 arms.
+
+A probability distribution over household welfare therefore carries more threshold information than a single predicted amount.
+
+But:
+
+```text
+predictive household welfare distribution
+!= fully propagated uncertainty of aggregate poverty estimates
+```
+
+The current Poverty release path explicitly retains `uncertainty_status=not_supplied` unless a separate aggregate uncertainty method is provided.
+
+## Poverty status != official statistics
+
+Preserve at least these states:
+
+```text
+implemented contract
+fixture-proven
+real-data-proven
+research-only / commissioned
 scientific release readiness
-substantive result
 public publication
+official statistic
 ```
 
-Promotion between these states must be explicit.
+The Sep 11 end-to-end chain reaches real-data research commissioning. It does not reach official-statistic status.
+
+## Support validity != value validity
+
+A Census value can be valid according to source semantics while lying outside common EPH support. The real commissioning intentionally retained large valid `IX_TOT` values rather than clipping them to training support.
+
+Current transport diagnostics report material shift, including roughly 28.8% of Census persons flagged weak-support under the predetermined rule and EPH-vs-Census domain-classifier AUC around 0.874.
+
+These are limitations to interpret, not reasons to rewrite valid source observations.
+
+## Private/collective dwelling universe remains visible
+
+The commissioned P1 artifact lacks a governed private-versus-collective dwelling indicator. This creates a real universe ambiguity and must remain a limitation rather than being patched by guessing from household size or clipping extreme values.
