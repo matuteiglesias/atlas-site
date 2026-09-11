@@ -23,17 +23,21 @@ La idea rectora es:
 
 Cada instrumento puede contener ciencia compleja. La integración entre instrumentos debería reducirse, en lo posible, a releases inmutables con manifest, IDs exactos, QA, limitaciones y checksums.
 
+## Mantenimiento por agentes
+
+Los agentes y maintainers deben empezar por [`AGENTS.md`](AGENTS.md) y [`docs/maintenance/00_START_HERE.md`](docs/maintenance/00_START_HERE.md). Ese bundle define precedencia de evidencia, estados, workflow de refresh y carry state. Los `CODEX_*` y `WORK_PACKET_*` históricos no son la guía operativa actual.
+
 ## Ecosistema cubierto
 
 El sitio documenta la integración entre, entre otros:
 
 - `microdatos-EPH-INDEC` — adquisición EPH;
-- `income-modeling-eph` — ciencia de modelado EPH;
+- `income-modeling-eph` — ciencia EPH-only y neutral analysis frame;
 - `eph-censo-aligner` — semántica EPH/Censo;
 - `samplerCensoARG` — sample/frame censal;
 - `encuestador-de-hogares` — target de inferencia EPH -> Censo y welfare;
-- `IPC-Argentina` — precios y target de semántica monetaria;
-- `canastasINDEC` — canastas/threshold inputs históricos;
+- `IPC-Argentina` — precios y semántica monetaria;
+- `canastasINDEC` — canastas/threshold inputs;
 - `indice-pobreza-UBA` — método y estimación de pobreza;
 - `argentina-geography` — autoridad geográfica;
 - `argentina-poverty-atlas` — consumidor público.
@@ -58,17 +62,11 @@ Una divergencia entre (1) y (2) se registra como deuda/migración; no se oculta.
 
 ## Desarrollo local
 
-Requiere Node.js y Yarn.
+Requiere Node.js >=18. El repositorio mantiene `package-lock.json`, por lo que la verificación reproducible usa npm:
 
 ```bash
-yarn
-yarn start
-```
-
-Build:
-
-```bash
-yarn build
+npm ci
+npm run build
 ```
 
 La verificación de deployment existente puede ejecutarse con:
