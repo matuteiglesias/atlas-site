@@ -1,293 +1,297 @@
 ---
 title: EPH, Census sampling and transport science
 sidebar_position: 8
-status: current-design
+status: current
 owners: [poverty-ecosystem-engineering]
 ---
 
 # EPH, Census sampling and transport science
 
-This page records the current engineering interpretation of the scientific boundary between `income-modeling-eph`, `samplerCensoARG`, and `encuestador-de-hogares`.
+The current architecture separates four scientific responsibilities that historically lived closer together:
 
-The main lesson from repository archaeology is that **EPH income modeling and EPH→Census welfare transport are different scientific studies over a partially shared data substrate**. They should share a neutral EPH observation/analysis artifact, not a modeling dataset, feature contract, fitted model, or runtime import.
+1. exact EPH source custody;
+2. EPH-only scientific analysis;
+3. EPH↔Census semantic alignment and Census sample identity;
+4. statistical transport from EPH evidence to an exact Census scoring population.
 
-## The target decomposition
+That separation is now exercised on real data rather than only described as target architecture.
+
+## Current decomposition
 
 ```text
-exact EPH quarter releases
-        |
-        v
-neutral EPH observation / analysis frame
+microdatos-EPH-INDEC
+ exact EPH quarter release
         |
         +------------------------------+
         |                              |
         v                              v
-EPH-only income study           semantic alignment
-        |                              |
-        v                              |
-modeling dataset                       |
-        |                              |
-        v                              |
-experiments / evidence                 |
-                                       |
-exact Census sample -------------------+
-        |                              |
-        +------------------------------+
-                       |
-                       v
-             transport feature plane
-                       |
-                       v
-              encuestador-de-hogares
-         training population + deployment DAG
-                       |
-                       v
-               household welfare
-                       |
-                       v
-                   Poverty v2
+income-modeling-eph             eph-censo-aligner
+EPH-only neutral frame          semantic comparability
++ EPH studies                         ^
+                                      |
+                         samplerCensoARG
+                   exact Census frame/sample
+                                      |
+                                      v
+                          aligned transport plane
+                                      |
+                                      v
+                         encuestador-de-hogares
+                    household-safe transport science
+                                      |
+                                      v
+                     predictive household welfare
+                                      |
+                                      v
+                              Poverty v2
 ```
 
-The arrows do not imply sibling-repository imports. Cross-repository integration should happen through immutable artifacts with exact identity, manifests, QA, limitations and checksums.
+Cross-repository arrows are artifact contracts, not sibling imports.
 
-## `income-modeling-eph` is logically more than one component
+## `income-modeling-eph`: current role
 
-The repository can remain one GitHub repository for now, but its scientific surface is better understood as three internal components.
+This repository remains a first-class EPH-only research instrument.
 
-### A. EPH observation / analysis-frame preparation
-
-This is the reusable data plane.
-
-It should eventually reconstruct a source-backed frame from exact EPH household/person quarter releases while preserving:
-
-- exact person and household identity;
-- native EPH variable semantics;
-- survey/design/expansion fields and their source definitions;
-- source quarter/year and geography identity;
-- deterministic reusable household-derived quantities where justified;
-- optional monetary-reference views only through exact `IPC-Argentina` conversion lineage;
-- manifests, QA and limitations.
-
-It should not define a model-study cohort, income target, leakage policy, final feature view or train/test split.
-
-The current `research.eph-annual-preprocessed@1` artifacts are historical evidence, not yet this neutral contract. They retain only `CODUSU` as identity, omit source-side `NRO_HOGAR` / `COMPONENTE` and EPH design fields such as `PONDERA` / `PONDIH`, and contain Census-shaped historical aliases plus target-derived fields.
-
-A future artifact may be named something like `research.eph-analysis-frame@1`; the name remains provisional until one source-backed release proves the boundary.
-
-### B. EPH income study
-
-This component owns a particular scientific question.
-
-The current feature contract defines approximately:
+It now implements and has real-data proof for:
 
 ```text
-INGRESO == 1
-P47T > 0
-PROP not missing
-        |
-        v
-log10(P47T)
+research.eph-analysis-frame@1
 ```
 
-with explicit feature blocks, leakage exclusions, geography/time specifications and model families.
+The neutral frame preserves native EPH household/person identity and available survey-design fields while excluding model targets, Census-shaped aliases, target-derived ranks and hidden monetary rebasing.
 
-That is a legitimate EPH-only **conditional positive-income** study. It is not automatically the training population or welfare model required for Census transport.
-
-This component can use observed EPH variables that are unavailable in Census. A strong EPH model is not required to be deployable on Census.
-
-### C. Experiment / evidence / promotion machinery
-
-The experiment runner, guards, split registry, diagnostics, run comparison, artifact collection and flagship freeze form a third logical component.
-
-This machinery should operate against a declared study/modeling-dataset contract. It need not know how the source EPH frame was produced, and its scientific evidence should state exactly which split, weighting and target policy was used.
-
-Keeping these components in one repository is currently cheaper than introducing new repositories. The boundary is conceptual and contract-first; physical extraction should happen only if independent consumers or maintenance pressure justify it.
-
-## Native EPH semantics must be restored at the reusable boundary
-
-The historical annual EPH artifacts inherited part of the old survey-to-Census preparation vocabulary. For example, EPH variables such as `CH04`, `CH06`, `IV1`, `IV3`, `II7`, etc. were materialized under Census-facing names such as `P02`, `P03`, `V01`, `H05`, `PROP`.
-
-That was useful when one monolithic system tried to make EPH resemble Census before inference. It is not the correct neutral boundary for a strictly EPH-only scientific workspace.
-
-The reusable EPH frame should therefore retain native EPH semantics (or explicitly governed EPH-side canonical concepts). `eph-censo-aligner` owns the later semantic mapping into a cross-source transport namespace.
-
-This gives a cleaner relationship:
+It also implements:
 
 ```text
-native EPH frame -------------------+
-                                    |
-                                    v
-                             semantic aligner
-                                    |
-                                    v
-                        canonical transport concepts
-                                    ^
-                                    |
-native Census sample ---------------+
+research.eph-income-study-cohort@1
 ```
 
-The transport system no longer requires the EPH source artifact itself to speak Census vocabulary.
+for its own positive-income EPH study. That live study path is currently gated by an **approved** monetary-conversion release.
 
-## EPH survey design is not Census sampling design
+This repository is **not** on the active Census-scoring runtime. Its feature contract can nevertheless be used as evidence to define a bounded EPH-only information ceiling for transport experiments, provided the transport study keeps its own cohort, target and folds.
 
-The upstream EPH source contains survey/expansion fields such as `PONDERA`, `PONDIH` and related income-weight fields. The current historical annual artifacts do not preserve them.
+## `samplerCensoARG`: who is scored
 
-A modern neutral EPH frame should preserve source design fields. Consumers then make explicit decisions about whether a particular field enters:
+The sampler owns the Census population/sample boundary.
 
-- model fitting;
-- probability calibration;
-- evaluation metrics;
-- descriptive estimates;
-- subgroup diagnostics;
-- or not at all.
-
-That decision belongs to the scientific study, not to generic preprocessing.
-
-The following quantities are separate concepts and must never share one generic `weight` semantic:
+The current real path uses:
 
 ```text
-EPH survey / expansion weight
-        !=
-Census sampler selection probability
-        !=
-donor-frame inverse-probability audit weight
-        !=
-poverty analysis weight
+research.census-frame@1
+research.census-target-year-sample/v2
 ```
 
-`samplerCensoARG` owns Census sample construction. `encuestador-de-hogares` owns how the EPH survey design enters transport training/evaluation. Poverty owns the final estimand and therefore the analysis-weight interpretation it accepts.
+The target-year sample keeps:
 
-## Split policy is scientific state
+- CPV-2010 donor identity;
+- household selection as the primary unit;
+- every person in selected households;
+- target-year person mass by department;
+- explicit selection probability and separate design-weight semantics;
+- no implicit poverty-region identity or model-fitting weight.
 
-The current EPH experiment split implementation randomizes individual rows. Current feature engineering also creates household-derived age composition and maximum education features.
+For Sep 11 science, the exact 2024 sample is:
 
-Once exact household/person identity is restored, validation must be able to group by household so household members do not cross folds or train/test boundaries.
+```text
+census-sample-2024-0839713eafea8d1b
+```
 
-This matters twice:
+It is a synthetic target-year-composition sample of Census-2010 donor units, not contemporaneous Census microdata.
 
-1. for ordinary EPH income-model evidence;
-2. for the staged transport model, where upstream learned features are generated out-of-fold.
+## `eph-censo-aligner`: what is semantically comparable
 
-The transport invariant therefore becomes stronger than merely “use OOF predictions”:
+The first real feature plane is:
 
-> intermediate predictions must be out-of-fold under an explicitly declared grouping/split policy that prevents household leakage for the approved training design.
+```text
+eph-cpv2010-semantic-plane-2024q3-v1
+```
 
-Random-person splits can remain sensitivity/reference experiments, but they should not be the only unnamed canonical validation regime.
+It materialized over:
 
-## `encuestador-de-hogares` owns a different training population
+- 47,564 EPH persons;
+- 469,172 Census persons.
 
-The transport system should consume the neutral EPH frame, not `research.eph-modeling-dataset@1`.
+The reviewed P1-R plane contains 21 approved concepts. `H11` and `H16` are rejected. Large valid `IX_TOT` values are not clipped to EPH training support.
 
-It owns its own:
+The aligner answers source semantics, recodes, support/schema gates and semantic comparability. It does not answer whether a 2010 donor state is valid for 2024 welfare interpretation.
 
-- eligible EPH training population;
-- stage target universes;
-- hurdle/two-part structure for income/welfare;
-- weighting/calibration policy;
-- household-aware OOF policy;
-- transport DAG;
+## `encuestador-de-hogares`: transport science
+
+The transport study owns:
+
+- EPH training population and target semantics;
+- household-aware fold policy;
+- direct vs staged/hurdle architecture comparisons;
+- deployable/shared vs EPH-only information-plane experiments;
 - support/domain-shift diagnostics;
-- scoring of the exact Census sample;
-- person→household welfare construction.
+- exact Census scoring;
+- person→household welfare construction;
+- predictive welfare distribution used downstream.
 
-The historical cascade's income-presence stage is useful evidence because a poverty-facing system cannot simply condition the Census population on already having positive income before prediction.
+The Sep 11 study uses no EPH survey/design weights in fitting or reported evaluation. This is an explicit study decision, not a generic preprocessing default.
 
-The first modern transport design should therefore ask a broader question than the current EPH-only positive-income model:
+## Income supervision and household integrity
+
+For exact EPH 2024-Q3:
+
+- 47,564 persons total;
+- 41,821 terminal-eligible zero-or-positive income observations;
+- 25,209 positive;
+- 16,612 true zero;
+- 5,688 `P47T == -9` unavailable responses;
+- 55 true missing;
+- 16,650 households;
+- 12,568 complete observed-income households used for strict household evaluation.
+
+`-9` and missing are unavailable supervision, not zero.
+
+Folds are grouped by household so members cannot leak across train/test partitions. Learned intermediate features used by downstream models are generated out-of-fold under the outer household split.
+
+## The information frontiers
+
+The current science distinguishes three frontiers:
+
+### P0 — baseline
+
+A small baseline of native/shared features. It establishes the initial failure mode and is not presented as the best possible model.
+
+### P1-R — reviewed deployable plane
+
+The 21-field real EPH/Census semantic plane. This is the current Census-deployable information surface used for Q8 commissioning.
+
+### P2 — EPH-only scientific ceiling
+
+A bounded richer set of valid EPH observables drawn from the EPH-only feature contract. It excludes income targets/components, identifiers, survey weights, target-derived fields and geography ranks.
+
+P2 asks whether missing predictive information exists inside EPH. It does not authorize scoring those fields on Census.
+
+## What the Sep 11 experiment established
+
+### Q1 — dominant baseline failure
+
+The direct hurdle-Gamma baseline is much stronger on zero/positive presence than on positive-income amount.
+
+Selected baseline evidence:
+
+- presence balanced accuracy about 0.872;
+- conditional-positive R² about 0.232;
+- positive-amount dispersion ratio about 0.465;
+- household R² about 0.288;
+- household dispersion about 0.543;
+- household Spearman about 0.618.
+
+The bottom tail is overpredicted and top tail materially underpredicted. The first lean/staged cascade is essentially tied/slightly worse than the direct baseline, so historical cascade complexity is not architecture law.
+
+### Q2 — real Census-compatible information matters
+
+The paired P0 vs P1-R experiment is complete under the frozen household-fold design. P1-R materially improves information/ranking and amount dispersion, with the favorable direction stable across folds.
+
+The exact producer result files remain the authority for metrics. The architecture-level consequence is that the semantic alignment work is scientifically useful rather than merely operational plumbing.
+
+### Q3 — information-family ordering
+
+The bounded P1-R family ablation closes with the qualitative ordering:
 
 ```text
-shared / derived observables
-        |
-        v
-person status / participation stages if useful
-        |
-        v
-income-presence / hurdle stages if useful
-        |
-        v
-conditional monetary amount
-        |
-        v
-resolved person income / welfare
-        |
-        v
-household welfare
+education > labor/housing > demographics
+composition approximately redundant in this experiment
 ```
 
-The exact stages remain empirical decisions. Historical RFC1–RFC4 grouping is evidence, not architecture law.
+This is a result of this exact design, not a permanent global feature-ranking claim.
 
-## `samplerCensoARG` is orthogonal to model training
+### Q4 — labor signal vs reconstruction
 
-The sampler owns who is scored on the Census side.
+True labor state contains downstream welfare signal. However, the tested deployable reconstruction captures essentially none of the oracle gain.
 
-For target-year mode it selects households with department-specific probabilities derived from donor person mass and exact target-year department person mass. It preserves all persons belonging to selected households.
+That says the issue is not simply whether labor matters; it is whether target-period labor structure can be reconstructed from the information actually available at deployment.
 
-The transport system receives that exact release and scores it. It does not resample, recalibrate or reinterpret the frame.
+### Q5 — P2 information ceiling
+
+The matched richer EPH-only frontier adds scientific signal beyond the baseline and supports the conclusion that some useful information is not currently transportable through the Census plane.
+
+P2 remains EPH-only research evidence. Census commissioning does not use the P2-only fields.
+
+### Q6 — amount remains the main error reservoir
+
+Oracle/error-reservoir diagnostics show that replacing only presence errors gives modest gains relative to the much larger ceiling obtained when positive amount is treated as known for diagnostic purposes.
+
+The upper-bound diagnostic is non-deployable and non-causal; its purpose is localization of error, not a performance claim.
+
+## Predictive distributions — Q7
+
+The mean frontier remains compressed, so the study tested whether a leakage-safe empirical residual distribution can recover low-tail prevalence better than thresholding point predictions.
+
+For both the P2 scientific ceiling and deployable P1-R arm, the probabilistic method reduced mean absolute prevalence error materially relative to hard thresholding, and all five outer folds moved in the favorable direction.
+
+The evidence index classifies both arms as `CLEAR SUCCESS`.
+
+This is why the downstream handoff is now a predictive household-welfare distribution rather than only a point amount.
+
+## Census commissioning — Q8
+
+The selected deployment plane is P1-R, not P2.
+
+The full exact Census scoring frame was commissioned:
 
 ```text
-samplerCensoARG
-    exact sample household/person IDs
-    selection probability
-    frame_vintage
-    sampling_target_period
-            |
-            v
-encuestador-de-hogares
-    score every released person
-    preserve exact IDs
-    construct household welfare
-            |
-            v
-Poverty
-    apply declared estimand / analysis semantics
+469,172 persons
+141,863 households
 ```
 
-A sampler probability must never be reused as an EPH model-fitting weight.
+with no technical identity failure.
 
-Likewise, `encuestador-de-hogares` should not invent the final poverty analysis weight. It carries forward sample/design lineage and produces welfare semantics.
+But the commissioning result is explicitly:
 
-## The two datasets that must not be confused
+```text
+COMPLETE_WITH_MATERIAL_TRANSPORT_CAVEATS
+```
 
-The ecosystem now needs two distinct EPH-derived artifacts:
+not scientific equivalence between EPH and Census.
 
-### Neutral analysis frame
+Material caveats include:
 
-Reusable across scientific consumers.
+- weak-support person fraction about 0.288;
+- EPH/Census domain-classifier AUC about 0.874;
+- no governed private-vs-collective dwelling indicator in the P1 artifact;
+- temporal reconstruction deferred.
 
-Contains observations, identity, design metadata and reusable deterministic derivations.
+## Predictive household-welfare boundary
 
-### Study modeling dataset
+`encuestador-de-hogares` main now implements:
 
-Private to one scientific study.
+```text
+research.household-welfare-predictive/v1
+```
 
-Contains cohort filtering, target transforms, feature views, exclusions, split identity and any study-specific derived variables.
+with representation approximately:
 
-The current repository has historically collapsed some of these layers. Separating them is more important than immediately splitting the GitHub repository.
+```text
+Y_h = max(0, location_h + R)
+```
 
-## Immediate producer work
+where `R` comes from governed EPH OOF residual evidence.
 
-The new evidence is tracked locally rather than turned into a new generic framework:
+The artifact is intentionally downstream-friendly: Poverty needs welfare semantics, distribution representation, exact parents, monetary scale and limitations—not classifier internals.
 
-- `income-modeling-eph#29` — native EPH identity, survey design and internal component boundary for the future analysis frame;
-- `income-modeling-eph#24/#25/#28` — source-backed preprocessing, entity identity/split integrity, and removal of Census deployment responsibility;
-- `encuestador-de-hogares#6` — transport training population, EPH survey-design policy and household-aware OOF semantics;
-- `samplerCensoARG#7` — governed target-year household sampling and explicit selection/weight semantics;
-- `eph-censo-aligner#7` — semantic authority and canonical transport feature plane.
+## What not to infer
 
-## Architecture test
+The current evidence does **not** establish that:
 
-A future engineer should be able to answer each question without opening unrelated model code:
+- CPV-2010 donor states are observed 2024 states;
+- P2 fields are available on Census;
+- weak-support Census units should be clipped or dropped;
+- survey weights should be introduced merely because EPH contains them;
+- the predictive residual distribution is complete aggregate uncertainty;
+- a successful Census scoring run is an official poverty estimate.
 
-| Question | Authority |
-| --- | --- |
-| What did INDEC EPH observe and how is the row identified? | EPH source + neutral EPH frame |
-| What population does this EPH income experiment model? | EPH income-study contract |
-| Which predictors/target/split/weights did that experiment use? | EPH study + experiment evidence |
-| Which Census households/persons are to be scored? | `samplerCensoARG` |
-| What EPH/Census concepts are semantically comparable? | `eph-censo-aligner` |
-| What is the transport training population and staged DAG? | `encuestador-de-hogares` |
-| How are EPH survey weights used in transport? | `encuestador-de-hogares` transport-model contract |
-| What is the Census selection probability? | `samplerCensoARG` sample release |
-| How do person predictions become household welfare? | `encuestador-de-hogares` |
-| What analysis weight/estimand defines poverty? | Poverty method/frame contract |
+## Next scientific layer
 
-If one repository must answer several unrelated rows of this table, the boundary should be re-examined.
+The highest-value remaining questions are now:
+
+1. support/domain-shift sensitivity and the private/collective universe;
+2. target-period latent-state reconstruction where justified;
+3. conditional-amount formulations after the information frontier is fixed;
+4. aggregate uncertainty semantics;
+5. cross-period replication.
+
+Generic transport infrastructure is no longer the primary blocker.
