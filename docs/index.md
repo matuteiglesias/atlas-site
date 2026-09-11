@@ -2,7 +2,7 @@
 title: "Poverty Ecosystem Engineering"
 sidebar_position: 1
 slug: /
-version: 1.0.0
+version: 1.1.0
 status: current
 owners: [poverty-ecosystem-engineering]
 source_repo: https://github.com/matuteiglesias/atlas-pobreza-docs
@@ -13,11 +13,9 @@ source_path: docs/index.md
 
 Este sitio es la **memoria de ingeniería y arquitectura cross-repo** del ecosistema argentino de medición de pobreza.
 
-La pregunta central ya no es “¿en qué notebook está este cálculo?”, sino:
+La pregunta central no es “¿en qué notebook está este cálculo?”, sino:
 
 > **¿qué sistema tiene autoridad para transformar qué evidencia, bajo qué contrato, y qué debe quedar explícito cuando el resultado cruza al siguiente instrumento?**
-
-El ecosistema se construye como una cadena de instrumentos científicos pequeños: adquisición EPH, modelado EPH, semántica EPH/Censo, sample/frame censal, inferencia survey-to-Census, semántica monetaria, líneas de pobreza, medición FGT, geografía y publicación en el Atlas.
 
 ## Empezar por la arquitectura
 
@@ -29,39 +27,86 @@ La sección **Engineering architecture** es la entrada autoritativa:
 - [Semantics, identities, and clocks](./architecture/03-semantics-identities-and-clocks.md)
 - [Current state and migration](./architecture/04-current-state-and-migration.md)
 - [Working-reference policy](./architecture/05-working-reference-policy.md)
+- [Engineering backlog](./architecture/06-engineering-backlog.md)
+- [EPH, Census sampling and transport science](./architecture/07-eph-census-scientific-decomposition.md)
+- [EncUESTADOR functional contract](./architecture/08-encuestador-functional-contract.md)
+- [Automation and refresh loop](./architecture/09-automation-and-refresh-loop.md)
 
-La regla rectora es simple:
+La regla rectora sigue siendo:
 
 > **Rich science inside; boring contracts between systems.**
 
-Los repos pueden contener ciencia sofisticada. Entre repos queremos artifacts versionados, IDs exactos, manifests, QA, limitaciones y checksums; no dependencias accidentales sobre código interno de un sibling.
+## Estado del sistema — 11 Sep 2026
 
-## El sistema, en una línea
+La cadena central ya no es solamente target architecture. A nivel de investigación se ha probado una integración real que conecta:
 
 ```text
-EPH + Census + geography + monetary/threshold references
-        -> semantically governed population and feature planes
-        -> survey-to-Census welfare inference
-        -> poverty measurement and estimation
-        -> governed poverty release
-        -> public Atlas
+EPH 2024-Q3
+    +
+CPV-2010 target-year sample
+    ↓
+real semantic feature plane
+    ↓
+household-safe transport science
+    ↓
+full Census research commissioning
+    ↓
+predictive household welfare
+    ↓
+quarter-specific poverty inputs
+    ↓
+predictive FGT measurement
 ```
 
-No todos estos arrows están hoy materializados con datos reales. La documentación distingue explícitamente **current**, **fixture-proven**, **proposed**, **legacy** y **blocked**.
+Esto es **research commissioning**, no una publicación de estadísticas oficiales.
+
+Los límites principales hoy ya no son “falta construir el pipeline”, sino soporte/transport shift, temporalidad de estados donor-vintage, uncertainty agregada y replicación en otro período.
+
+El último tramo hacia publicación todavía está en transición: el productor real provincia+nación de Poverty y el ingest de release real en Atlas están validados en PRs abiertos y no deben describirse como comportamiento canónico de `main` hasta que se integren.
+
+## Separaciones que importan
+
+La arquitectura mantiene explícitamente:
+
+```text
+EPH-only science
+!=
+EPH -> Census transport
+
+semantic comparability
+!=
+target-period temporal validity
+
+EPH survey weights
+!=
+Census selection probability
+!=
+Poverty analysis semantics
+
+point household welfare
+!=
+predictive household welfare distribution
+!=
+aggregate poverty-estimate uncertainty
+```
+
+Estas distinciones evitan que un artifact válido propague una interpretación equivocada al siguiente sistema.
 
 ## Material anterior: útil, pero subordinado
 
-Las secciones históricas de Métodos, Operación, Referencia, Catálogo, Pocket y Playbooks se conservan como **working/reference material**. Surgieron de una etapa de retrieval y documentación anterior a la arquitectura actual. Algunas páginas son buenas ayudas prácticas; otras requieren revisión.
+Métodos, Operación, Referencia, Catálogo, Pocket y Playbooks históricos se conservan como **working/reference material**. Algunas páginas son excelentes ayudas prácticas; otras documentan estados ya superados.
 
-No definen por sí solas un boundary, un artifact contract ni una autoridad científica. Se van promoviendo cuando vuelven a ser relevantes y pueden enlazarse a evidencia actual.
+No definen por sí solas un boundary, artifact contract o autoridad científica. Se promueven sólo cuando vuelven a ser relevantes y pueden anclarse en evidencia actual.
 
 ## Para quién es
 
 Este sitio sirve a:
 
-- ingenieros que necesitan entender dónde debe vivir una nueva responsabilidad;
-- investigadores que necesitan reconstruir lineage y supuestos antes de interpretar un resultado;
-- maintainers y agentes que necesitan continuar el sistema sin depender de memoria oral;
-- colaboradores que necesitan incorporarse sin recorrer años de scripts y notebooks históricos.
+- ingenieros que necesitan ubicar correctamente una nueva responsabilidad;
+- investigadores que necesitan reconstruir lineage, supuestos y caveats antes de interpretar un resultado;
+- maintainers y agentes que necesitan continuar el sistema sin memoria oral;
+- colaboradores que necesitan incorporarse sin recorrer años de scripts/notebooks históricos.
 
-La documentación debe facilitar onboarding y continuation sin convertir el sitio en una segunda implementación de los sistemas que describe.
+Para mantenimiento autónomo, la entrada es el `AGENTS.md` del repositorio y `docs/maintenance/00_START_HERE.md`. El carry state registra qué revisions de productores fueron inspeccionadas en el último refresh.
+
+La documentación debe facilitar onboarding y continuation sin convertirse en una segunda implementación de los sistemas que describe.
